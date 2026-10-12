@@ -52,3 +52,6 @@
 - Se añadió eliminación de avisos en el panel y ficha, visible solo para el administrador, y política RLS de borrado exclusivo para administradores.
 - La ficha muestra errores de consulta de local, equipos y avisos en vez de dejar contadores indefinidos; se corrigió la construcción de la fila de eliminación en la ficha.
 - La ruta `/aviso` continúa siendo un formulario público separado para comunicar incidencias sin entrar al panel privado.
+
+- Los informes globales requieren perfil administrador para evitar que una cuenta de observación acceda a agregados de otros locales.
+- La ficha del local muestra mensajes concretos de error para consultas de local/equipos/avisos y ofrece eliminación administrativa de avisos.
