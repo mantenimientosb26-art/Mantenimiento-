@@ -32,3 +32,8 @@ Repositorio de recuperación y control de versiones de la aplicación de avisos 
 
 ## Regla de despliegue
 No desplegar cambios de producción hasta que el código se revise, se compruebe la configuración de secretos/bindings y se realice una prueba de envío sin adjuntos y otra con adjuntos. Nunca incluir secretos en commits.
+
+
+### Seguridad añadida (12/10/2026)
+- La subida interna a Google Drive exige un secreto compartido entre los dos Workers; el valor permanece en secretos de Cloudflare y no está en el repositorio.
+- La consulta de adjuntos de Drive desde la ficha requiere sesión Supabase válida y perfil administrador, y se realiza en lote para evitar una llamada por aviso.
