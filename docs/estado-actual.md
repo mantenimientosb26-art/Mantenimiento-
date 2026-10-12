@@ -55,3 +55,16 @@
 
 - Los informes globales requieren perfil administrador para evitar que una cuenta de observación acceda a agregados de otros locales.
 - La ficha del local muestra mensajes concretos de error para consultas de local/equipos/avisos y ofrece eliminación administrativa de avisos.
+
+
+## Auditoría y corrección de fichas — 12/10/2026 (última revisión)
+
+- El usuario confirma que la subida de fotos y vídeos a Google Drive ya funciona. No modificar ese flujo sin una nueva evidencia de fallo.
+- Datos consultados en Supabase: 13 locales activos, 11 avisos, 0 equipos y 0 intervenciones.
+- La cuenta `mantenimientosb26@gmail.com` tiene perfil activo con rol `admin`.
+- `site_access` no tiene filas. Esto no debe bloquear al administrador: las políticas de `sites` y la función `can_access_site` permiten acceso al rol admin.
+- Se corrigió el panel principal: ahora pinta la lista de locales aunque falle la consulta de avisos o de equipos; cada sección muestra su propio error en lugar de abortar toda la carga. También se incluyen teléfono y categoría en la consulta de avisos, que la interfaz ya mostraba.
+- Cambio desplegado en Cloudflare Worker `servicio-tecnico-mantenimiento` el 12/10/2026; la API confirmó despliegue correcto. Se comprobó que siguen presentes los bindings `DRIVE_KV`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `UPLOAD_SHARED_SECRET`.
+- Código sincronizado en GitHub en el commit `5a25e4374fda490ec0c0501dedd3d6f506124c27`.
+- Limitación de verificación: el entorno de ejecución bloquea las peticiones directas al dominio público del Worker, por lo que no se pudo completar una prueba de navegador autenticada desde esta sesión.
+- Pendiente funcional prioritario: comprobar desde la app, con la cuenta administradora, que se ven los 13 locales y que al abrir una ficha cargan datos del local. Después empezar a registrar los equipos reales; ahora mismo la tabla de equipos está vacía.
