@@ -40,3 +40,5 @@
 
 - La subida interna a Drive está protegida por un secreto compartido entre los dos Workers, almacenado exclusivamente en secretos de Cloudflare.
 - La consulta de archivos en Drive se valida con sesión Supabase y perfil `admin`; la ficha agrupa la consulta para evitar una llamada de OAuth por cada aviso.
+
+- Los errores al consultar los adjuntos de Drive ahora se muestran en la ficha en lugar de confundirse con una carpeta sin archivos.
