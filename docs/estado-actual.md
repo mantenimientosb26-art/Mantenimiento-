@@ -37,3 +37,6 @@
 - Cloudflare acepta los despliegues y no devuelve incidencias registradas en Observability; la prueba real de navegación y subida de archivos aún debe hacerse desde el navegador.
 
 - La ficha del local consulta los adjuntos directamente en Google Drive mediante un endpoint protegido: valida sesión Supabase y exige perfil administrador; la búsqueda se agrupa para evitar una llamada por aviso.
+
+- La subida interna a Drive está protegida por un secreto compartido entre los dos Workers, almacenado exclusivamente en secretos de Cloudflare.
+- La consulta de archivos en Drive se valida con sesión Supabase y perfil `admin`; la ficha agrupa la consulta para evitar una llamada de OAuth por cada aviso.
