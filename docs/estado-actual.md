@@ -25,3 +25,13 @@
 3. Ejecutar una prueba controlada con datos de prueba, comprobar que aparece el registro y retirarlo solo si se identifica inequívocamente como prueba.
 4. Probar la subida de un archivo pequeño y comprobar carpeta/archivo en Drive.
 5. Ajustar CORS si se hacen llamadas desde navegador; actualmente el origen permitido en cabecera es el Worker antiguo.
+
+
+## Revisión y correcciones — 12/10/2026
+- Worker `servicio-tecnico-mantenimiento` desplegado con mensajes visibles para los casos de sesión ausente e identificador de local ausente en `/local`.
+- En la ficha del local, cada aviso se puede expandir para leer título, descripción y persona que lo comunicó.
+- En el panel principal, cada aviso se puede expandir para ver descripción, persona, teléfono y categoría.
+- Worker `mantenimiento-avisos-nuevo` actualizado con el logo original SIGANBALANDO GROUP centrado sobre fondo blanco y validación previa de máximo 5 archivos, 25 MB por archivo y tipos MIME admitidos.
+- Se preservaron `global_fetch_strictly_public`, el binding `DRIVE_KV` y los secretos OAuth `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+- No se borraron registros. Conteo consultado: 13 locales, 10 avisos, 0 adjuntos registrados en la tabla `attachments`, 0 equipos y 0 intervenciones.
+- Cloudflare acepta los despliegues y no devuelve incidencias registradas en Observability; la prueba real de navegación y subida de archivos aún debe hacerse desde el navegador.
