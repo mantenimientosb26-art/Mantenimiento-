@@ -37,3 +37,13 @@ No desplegar cambios de producción hasta que el código se revise, se compruebe
 ### Seguridad añadida (12/10/2026)
 - La subida interna a Google Drive exige un secreto compartido entre los dos Workers; el valor permanece en secretos de Cloudflare y no está en el repositorio.
 - La consulta de adjuntos de Drive desde la ficha requiere sesión Supabase válida y perfil administrador, y se realiza en lote para evitar una llamada por aviso.
+
+
+## Acceso privado y control de avisos — 12/10/2026
+- Se desplegó registro con código de invitación de un solo uso, validado en Supabase y exigido también por el trigger de alta. El registro directo sin código válido se rechaza en base de datos.
+- El administrador genera códigos desde el panel, asignando un local y el perfil Observación (solo lectura) o Técnico (gestión del local). Caducidad configurable de 1 a 30 días, siete por defecto.
+- Los códigos se almacenan como hash y se consumen al registrarse; el alta crea automáticamente el perfil y el permiso para el local seleccionado.
+- Se retiró la excepción de alta de administrador por correo; el perfil de administrador existente no se modifica.
+- Se añadió eliminación de avisos en el panel y ficha, visible solo para el administrador, y política RLS de borrado exclusivo para administradores.
+- La ficha muestra errores de consulta de local, equipos y avisos en vez de dejar contadores indefinidos; se corrigió la construcción de la fila de eliminación en la ficha.
+- La ruta `/aviso` continúa siendo un formulario público separado para comunicar incidencias sin entrar al panel privado.
