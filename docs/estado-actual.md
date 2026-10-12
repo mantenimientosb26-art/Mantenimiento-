@@ -35,3 +35,5 @@
 - Se preservaron `global_fetch_strictly_public`, el binding `DRIVE_KV` y los secretos OAuth `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
 - No se borraron registros. Conteo consultado: 13 locales, 10 avisos, 0 adjuntos registrados en la tabla `attachments`, 0 equipos y 0 intervenciones.
 - Cloudflare acepta los despliegues y no devuelve incidencias registradas en Observability; la prueba real de navegación y subida de archivos aún debe hacerse desde el navegador.
+
+- La ficha del local consulta los adjuntos directamente en Google Drive mediante un endpoint protegido: valida sesión Supabase y exige perfil administrador; la búsqueda se agrupa para evitar una llamada por aviso.
