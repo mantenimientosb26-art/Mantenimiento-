@@ -42,3 +42,13 @@
 - La consulta de archivos en Drive se valida con sesión Supabase y perfil `admin`; la ficha agrupa la consulta para evitar una llamada de OAuth por cada aviso.
 
 - Los errores al consultar los adjuntos de Drive ahora se muestran en la ficha en lugar de confundirse con una carpeta sin archivos.
+
+
+## Acceso privado y control de avisos — 12/10/2026
+- Se desplegó registro con código de invitación de un solo uso, validado en Supabase y exigido también por el trigger de alta. El registro directo sin código válido se rechaza en base de datos.
+- El administrador genera códigos desde el panel, asignando un local y el perfil Observación (solo lectura) o Técnico (gestión del local). Caducidad configurable de 1 a 30 días, siete por defecto.
+- Los códigos se almacenan como hash y se consumen al registrarse; el alta crea automáticamente el perfil y el permiso para el local seleccionado.
+- Se retiró la excepción de alta de administrador por correo; el perfil de administrador existente no se modifica.
+- Se añadió eliminación de avisos en el panel y ficha, visible solo para el administrador, y política RLS de borrado exclusivo para administradores.
+- La ficha muestra errores de consulta de local, equipos y avisos en vez de dejar contadores indefinidos; se corrigió la construcción de la fila de eliminación en la ficha.
+- La ruta `/aviso` continúa siendo un formulario público separado para comunicar incidencias sin entrar al panel privado.
