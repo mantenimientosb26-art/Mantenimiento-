@@ -1,0 +1,26 @@
+name: Deploy maintenance preview to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - rebuild/clean-app
+    paths:
+      - "rebuild/**"
+      - ".github/workflows/deploy-maintenance-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout rebuild branch
+        uses: actions/checkout@v4
+      - name: Publish preview to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy rebuild --project-name=servicio-tecnico-mantenimiento --branch=rebuild-clean-app
