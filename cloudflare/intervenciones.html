@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intervenciones · Servicio Técnico</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#172b24;background:#f3f7f4}*{box-sizing:border-box}body{margin:0}.top{background:#174b38;color:#fff;padding:22px max(18px,calc((100% - 1000px)/2))}.top h1{margin:0;font-size:24px}.top p{margin:6px 0 0;color:#d9e9df}.wrap{max-width:1000px;margin:24px auto;padding:0 16px}.card{background:#fff;border:1px solid #dce7df;border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 2px 8px #143b2410}h2{font-size:18px;margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}label{font-size:13px;font-weight:650;display:block;margin-bottom:6px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd9cf;border-radius:8px;font:inherit;background:#fff;color:#172b24}textarea{min-height:95px;resize:vertical}.wide{grid-column:1/-1}.actions{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}button{background:#176344;color:#fff;border:0;border-radius:8px;padding:12px 17px;font-weight:700;cursor:pointer}button.secondary{background:#e6eee8;color:#174b38}.notice{padding:12px;border-radius:8px;background:#edf4ef;margin:12px 0;white-space:pre-wrap}.notice.error{background:#fff0ee;color:#982b20}.item{padding:14px 0;border-bottom:1px solid #e7eee9}.item:last-child{border:0}.meta{font-size:12px;color:#64766b;margin:5px 0}.empty{color:#6a7b71;padding:12px 0}@media(max-width:640px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.card{padding:15px}}
+</style></head>
+<body>
+<header class="top"><h1>Intervenciones de mantenimiento</h1><p>Módulo independiente · Historial por local y equipo</p></header>
+<main class="wrap">
+<div id="notice" class="notice">Comprobando sesión…</div>
+<section class="card"><h2>Registrar intervención</h2>
+<form id="form" class="grid">
+<div><label for="site">Local *</label><select id="site" required><option value="">Cargando locales…</option></select></div>
+<div><label for="equipment">Equipo *</label><select id="equipment" required disabled><option value="">Selecciona primero un local</option></select></div>
+<div><label for="type">Tipo *</label><select id="type" required><option value="breakdown">Avería</option><option value="corrective">Mantenimiento correctivo</option><option value="preventive">Mantenimiento preventivo</option><option value="inspection">Inspección</option><option value="cleaning">Limpieza</option><option value="other">Otro</option></select></div>
+<div><label for="date">Fecha de intervención *</label><input id="date" type="date" required></div>
+<div class="wide"><label for="title">Trabajo realizado / título *</label><input id="title" maxlength="180" required placeholder="Ej. Sustitución de termostato"></div>
+<div class="wide"><label for="description">Descripción del trabajo *</label><textarea id="description" required placeholder="Diagnóstico, actuación y resultado"></textarea></div>
+<div><label for="parts">Piezas y materiales utilizados</label><textarea id="parts" placeholder="Piezas, referencias, cantidades"></textarea></div>
+<div><label for="cost">Coste (€)</label><input id="cost" type="number" min="0" step="0.01" placeholder="0,00"></div>
+<div class="wide"><label><input id="follow" type="checkbox" style="width:auto;margin-right:8px">Requiere seguimiento</label><textarea id="followNotes" placeholder="Qué queda pendiente y próxima actuación (si procede)"></textarea></div>
+<div class="wide actions"><button id="save" type="submit">Guardar intervención</button><button class="secondary" id="reload" type="button">Actualizar historial</button></div>
+</form></section>
+<section class="card"><h2>Historial del equipo</h2><div id="history" class="empty">Selecciona un local y equipo para consultar su historial.</div></section>
+</main>
+<script>
+const SUPABASE_URL="https://knpvuiamdbnbrkwmoxqf.supabase.co";
+const SUPABASE_KEY="sb_publishable_Q2_U354U7Wm5TSGVDH0Tiw_h0eP-nXX";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let allEquipment=[];
+function notice(msg,error=false){$("notice").textContent=msg;$("notice").className="notice"+(error?" error":"")}
+function dateLocal(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+async function init(){
+ $("date").value=dateLocal();
+ const {data:{session},error:authError}=await sb.auth.getSession();
+ if(authError)throw authError;
+ if(!session){notice("No hay una sesión iniciada en este navegador. Inicia sesión en la aplicación de mantenimiento y vuelve a abrir este módulo.",true);$("form").hidden=true;return}
+ const [{data:sites,error:se},{data:eq,error:ee}]=await Promise.all([
+  sb.from("sites").select("id,code,name,active").eq("active",true).order("name"),
+  sb.from("equipment").select("id,site_id,name,category,brand,model,status").order("name")
+ ]);
+ if(se)throw se;if(ee)throw ee;
+ allEquipment=eq||[];
+ $("site").innerHTML='<option value="">Selecciona un local</option>'+(sites||[]).map(s=>'<option value="'+esc(s.id)+'">'+esc((s.code?s.code+" · ":"")+s.name)+'</option>').join("");
+ if(!(sites||[]).length)notice("Sesión iniciada, pero no se han encontrado locales accesibles. Comprueba los permisos de la cuenta.",true);
+ else notice("Sesión verificada. El módulo está conectado a la base de datos.");
+}
+function loadEquipment(){
+ const siteId=$("site").value;const list=allEquipment.filter(e=>e.site_id===siteId);
+ $("equipment").disabled=!siteId;
+ $("equipment").innerHTML='<option value="">Selecciona un equipo</option>'+list.map(e=>'<option value="'+esc(e.id)+'">'+esc([e.name,e.brand,e.model].filter(Boolean).join(" · "))+'</option>').join("");
+ $("history").textContent="Selecciona un equipo para consultar su historial.";
+}
+async function loadHistory(){
+ const equipmentId=$("equipment").value;if(!equipmentId){$("history").textContent="Selecciona un equipo para consultar su historial.";return}
+ $("history").textContent="Cargando historial…";
+ const {data,error}=await sb.from("equipment_maintenance_records").select("id,maintenance_type,title,description,parts_used,cost,performed_at,follow_up_required,follow_up_notes,created_at").eq("equipment_id",equipmentId).order("performed_at",{ascending:false});
+ if(error){$("history").textContent="No se pudo consultar el historial: "+error.message;return}
+ if(!data?.length){$("history").textContent="Este equipo todavía no tiene intervenciones registradas.";return}
+ const labels={breakdown:"Avería",corrective:"Correctivo",preventive:"Preventivo",inspection:"Inspección",cleaning:"Limpieza",other:"Otro"};
+ $("history").innerHTML=data.map(r=>'<article class="item"><strong>'+esc(r.title)+'</strong><div class="meta">'+esc(labels[r.maintenance_type]||r.maintenance_type)+' · '+esc(new Date(r.performed_at).toLocaleDateString("es-ES"))+(r.cost!=null?' · '+esc(Number(r.cost).toLocaleString("es-ES",{style:"currency",currency:"EUR"})):"")+'</div><p>'+esc(r.description)+'</p>'+(r.parts_used?'<p><b>Materiales:</b> '+esc(r.parts_used)+'</p>':"")+(r.follow_up_required?'<p><b>Seguimiento pendiente:</b> '+esc(r.follow_up_notes||"Sin detalle")+'</p>':"")+'</article>').join("");
+}
+$("site").addEventListener("change",loadEquipment);
+$("equipment").addEventListener("change",()=>loadHistory());
+$("reload").addEventListener("click",loadHistory);
+$("follow").addEventListener("change",()=>{$("followNotes").required=$("follow").checked});
+$("form").addEventListener("submit",async ev=>{
+ ev.preventDefault();const equipmentId=$("equipment").value;const siteId=$("site").value;
+ if(!siteId||!equipmentId){notice("Selecciona un local y un equipo.",true);return}
+ const {data:{user},error:ue}=await sb.auth.getUser();if(ue||!user){notice("La sesión ha caducado. Inicia sesión de nuevo.",true);return}
+ const payload={site_id:siteId,equipment_id:equipmentId,technician_id:user.id,maintenance_type:$("type").value,title:$("title").value.trim(),description:$("description").value.trim(),parts_used:$("parts").value.trim()||null,cost:$("cost").value===""?null:Number($("cost").value),performed_at:new Date($("date").value+"T12:00:00").toISOString(),follow_up_required:$("follow").checked,follow_up_notes:$("followNotes").value.trim()||null};
+ if(!payload.title||!payload.description){notice("Completa el título y la descripción.",true);return}
+ if(payload.cost!==null&&(!Number.isFinite(payload.cost)||payload.cost<0)){notice("El coste debe ser un número igual o superior a cero.",true);return}
+ $("save").disabled=true;$("save").textContent="Guardando…";
+ try{const {error}=await sb.from("equipment_maintenance_records").insert(payload);if(error)throw error;notice("Intervención guardada correctamente.");$("form").reset();$("date").value=dateLocal();$("site").value=siteId;loadEquipment();$("equipment").value=equipmentId;await loadHistory()}
+ catch(e){notice("No se pudo guardar la intervención: "+(e?.message||"Error desconocido")+". No se ha confirmado el guardado.",true)}
+ finally{$("save").disabled=false;$("save").textContent="Guardar intervención"}
+});
+init().catch(e=>notice("No se pudo inicializar el módulo: "+(e?.message||e),true));
+</script></body></html>
