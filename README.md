@@ -1,49 +1,47 @@
 # Servicio Técnico Mantenimiento
 
-Repositorio de recuperación y control de versiones de la aplicación de avisos de mantenimiento para 13 locales.
+Aplicación de avisos, fichas de locales/equipos e intervenciones para los 13 locales.
 
-## Arquitectura actual (verificada el 11/10/2026)
-- Cloudflare Worker público: `mantenimiento-avisos-nuevo` (formulario y pasarela de avisos).
-- Cloudflare Worker de Google Drive: `servicio-tecnico-mantenimiento` (OAuth y ruta `/google-drive/upload`).
-- Supabase project ref: `knpvuiamdbnbrkwmoxqf` (datos de aplicación y avisos).
-- Supabase Edge Function: `submit-maintenance-incident`, versión 4.
-- Adjuntos: requisito del proyecto: **solo Google Drive**, nunca Supabase Storage.
+## Arquitectura desplegada — revisada el 18/10/2026
 
-## Estado de producción comprobado (12/10/2026)
-- 13 locales activos en `public.sites`.
-- 10 avisos, 0 adjuntos registrados, 0 equipos y 0 intervenciones en la base de datos.
-- El panel se ha actualizado para abrir los avisos del listado mediante detalles desplegables y para mostrar mensajes claros en la ficha del local si falta sesión o identificador.
-- El formulario público incluye el logotipo original SIGANBALANDO GROUP centrado sobre fondo blanco y valida en cliente el número, tipo y tamaño de los adjuntos.
-- El Worker del formulario reenvía los campos a la función Supabase y, si hay archivos, intenta subirlos a Google Drive a través del Worker de Drive.
-- La función Supabase actual registra únicamente el aviso y no sube archivos a Storage.
-- El formulario muestra confirmación tras guardar el aviso y advierte si la subida de adjuntos falla.
+- **Fichas de locales y equipos:** Cloudflare Worker `mantenimiento-fichas`.
+  - Acceso: https://mantenimiento-fichas.servicio-tecnico-mantenimiento.workers.dev/
+  - Código versionado: [cloudflare/mantenimiento-fichas.js](cloudflare/mantenimiento-fichas.js)
+  - Cada ficha de equipo incluye historial y formulario para registrar intervenciones.
+- **Formulario público de avisos:** Cloudflare Worker `mantenimiento-avisos-nuevo`.
+- **OAuth y operaciones de Google Drive:** Cloudflare Worker `servicio-tecnico-mantenimiento`, incluidas las rutas `/google-drive/upload` y `/intervenciones`.
+- **Base de datos y autenticación:** Supabase, proyecto `knpvuiamdbnbrkwmoxqf`.
+- **Registro de avisos:** Edge Function `submit-maintenance-incident`, versión 4.
+- **Datos:** Supabase almacena locales, equipos, avisos, usuarios, estados e intervenciones. Los archivos adjuntos del flujo de avisos deben guardarse exclusivamente en Google Drive; no subir adjuntos nuevos a Supabase Storage.
 
-## Pendientes / riesgos conocidos
-1. La inserción de avisos debe validarse de extremo a extremo con una nueva prueba controlada; hay 10 registros existentes y no se han eliminado.
-2. La subida a Google Drive debe validarse con un nuevo envío con adjunto; no se ha confirmado desde esta revisión.
-3. Revisar los logs de `submit-maintenance-incident` y probar la inserción con un aviso controlado antes de declarar resuelto el formulario.
-4. Revisar las cabeceras CORS de la función; `Access-Control-Allow-Origin` está fijado al dominio antiguo aunque la lista de orígenes admite el Worker nuevo. El Worker llama a la función desde servidor, pero esto puede afectar a llamadas directas desde navegador.
-5. No guardar tokens, secretos de OAuth, service-role keys ni credenciales en este repositorio. Las credenciales permanecen en secretos de Cloudflare/Supabase.
+## Estado observado
 
-## Contenido de este repositorio
-- `cloudflare/mantenimiento-avisos-nuevo.js`: copia del código desplegado del formulario/pasarela.
-- `supabase/functions/submit-maintenance-incident/index.ts`: código desplegado de la función Supabase.
-- `docs/estado-actual.md`: notas de arquitectura y verificación.
+- 13 locales, 102 equipos, 8 avisos y 1 intervención registrada.
+- La tabla de metadatos `attachments` no tiene filas; esto no demuestra por sí solo que no existan archivos en Drive.
+- La tabla antigua `interventions` está vacía; el historial actual usa `equipment_maintenance_records`.
+- El formulario de intervenciones se ha añadido a cada ficha de equipo y está desplegado en Cloudflare. El código del Worker desplegado coincide con el guardado en GitHub.
+- La inserción requiere una sesión válida y acceso al local; la política RLS comprueba que el técnico de la intervención coincide con el usuario autenticado.
+- Se restringió la RPC heredada `submit_unified_public_incident` para impedir ejecución por usuarios anónimos y se retiró la ejecución directa de la función interna de auditoría `log_maintenance_change()`. Los triggers de auditoría siguen definidos.
 
-## Regla de despliegue
-No desplegar cambios de producción hasta que el código se revise, se compruebe la configuración de secretos/bindings y se realice una prueba de envío sin adjuntos y otra con adjuntos. Nunca incluir secretos en commits.
+## Pendiente de verificación funcional
 
+1. Probar con una cuenta real que el formulario de intervención guarde una fila y que aparezca en el historial tras recargar.
+2. Probar el envío público de aviso sin adjuntos y con adjuntos, comprobando la confirmación real.
+3. Validar una subida a Google Drive de extremo a extremo y revisar el caso anterior en el que la subida devolvió un error aunque el archivo apareció en Drive.
+4. Resolver el almacenamiento actual de miniaturas de las fichas, que aún usa el bucket privado heredado `maintenance-attachments`, para cumplir la regla de guardar archivos exclusivamente en Drive sin perder imágenes existentes.
+5. Revisar los avisos restantes de los asesores de seguridad de Supabase. Las funciones públicas de invitaciones y envío de avisos tienen validaciones propias y no deben bloquearse a ciegas.
 
-### Seguridad añadida (12/10/2026)
-- La subida interna a Google Drive exige un secreto compartido entre los dos Workers; el valor permanece en secretos de Cloudflare y no está en el repositorio.
-- La consulta de adjuntos de Drive desde la ficha requiere sesión Supabase válida y perfil administrador, y se realiza en lote para evitar una llamada por aviso.
+## Reglas de mantenimiento
 
+- No desplegar cambios sin revisar el código actual, validar la sintaxis y comprobar los bindings/secretos.
+- No guardar OAuth tokens, claves `service_role`, secretos compartidos ni credenciales en GitHub.
+- No afirmar que un envío o una subida se completó hasta confirmar la respuesta real del servidor y el registro correspondiente.
+- Documentar cambios de permisos en migraciones y comprobar que las políticas RLS siguen permitiendo el flujo previsto.
 
-## Acceso privado y control de avisos — 12/10/2026
-- Se desplegó registro con código de invitación de un solo uso, validado en Supabase y exigido también por el trigger de alta. El registro directo sin código válido se rechaza en base de datos.
-- El administrador genera códigos desde el panel, asignando un local y el perfil Observación (solo lectura) o Técnico (gestión del local). Caducidad configurable de 1 a 30 días, siete por defecto.
-- Los códigos se almacenan como hash y se consumen al registrarse; el alta crea automáticamente el perfil y el permiso para el local seleccionado.
-- Se retiró la excepción de alta de administrador por correo; el perfil de administrador existente no se modifica.
-- Se añadió eliminación de avisos en el panel y ficha, visible solo para el administrador, y política RLS de borrado exclusivo para administradores.
-- La ficha muestra errores de consulta de local, equipos y avisos en vez de dejar contadores indefinidos; se corrigió la construcción de la fila de eliminación en la ficha.
-- La ruta `/aviso` continúa siendo un formulario público separado para comunicar incidencias sin entrar al panel privado.
+## Archivos principales
+
+- `cloudflare/mantenimiento-fichas.js`: código del Worker de fichas y registro de intervenciones.
+- `cloudflare/mantenimiento-avisos-nuevo.js`: formulario público y pasarela de avisos.
+- `cloudflare/servicio-tecnico-mantenimiento.js`: rutas de Google Drive y módulo independiente de intervenciones.
+- `supabase/functions/submit-maintenance-incident/index.ts`: registro de avisos en Supabase.
+- `docs/auditoria-inicial-2026-10-18.md`: auditoría y cambios realizados.
