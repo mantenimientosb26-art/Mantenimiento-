@@ -25,7 +25,7 @@ Revisión de solo lectura de GitHub, Cloudflare y Supabase. No se ha desplegado 
 - El formulario registra tipo, fecha, asunto, descripción, materiales, coste y seguimiento en `equipment_maintenance_records`.
 - Se requiere una sesión autenticada; se usa el usuario actual como `technician_id` y la política RLS existente restringe el acceso al local.
 - Se añadió captura de errores en carga de locales/equipos para que se muestren en pantalla.
-- El código del Worker y el JavaScript del navegador pasan comprobación sintáctica. Se verificó que el Worker desplegado contiene el formulario, el historial y la inserción.
+- El código del Worker y el JavaScript del navegador pasan comprobación sintáctica. Se verificó que el Worker desplegado contiene el formulario, el historial y la inserción, y que su contenido coincide con la versión guardada en la rama principal de GitHub.
 - **Pendiente:** probar una inserción real desde navegador con la cuenta del usuario. No se han creado registros de prueba ni modificado el esquema de Supabase.
 
 ## Siguiente secuencia segura
@@ -35,5 +35,8 @@ Revisión de solo lectura de GitHub, Cloudflare y Supabase. No se ha desplegado 
 4. Corregir en una rama aislada, probar lectura de locales/equipos, formulario público sin adjuntos y formulario con adjunto.
 5. Desplegar solo después de validar las pruebas y comprobar los endpoints activos.
 
-## Seguridad
-No se copiaron secretos OAuth, service-role keys ni tokens de Google Drive. El despliegue se limitó al Worker de fichas; no se cambiaron políticas, funciones ni datos de Supabase.
+## Seguridad y cambios de permisos — 18/10/2026
+- Se retiró el permiso `EXECUTE` de `anon` sobre la RPC heredada `submit_unified_public_incident(...)`: los Workers activos usan la Edge Function `submit-maintenance-incident` y no referencian la RPC antigua. Se conserva el permiso de `authenticated`.
+- Se retiró `EXECUTE` de `PUBLIC`, `anon` y `authenticated` sobre `log_maintenance_change()`, que es una función interna de trigger. Se verificó que los triggers de auditoría siguen definidos en `incidents`, `interventions`, `equipment` y `attachments`.
+- Las funciones públicas de invitación/listado y la RPC con token de acceso se mantienen porque forman parte del flujo público y requieren una revisión individual antes de cambiar permisos.
+- No se copiaron secretos OAuth, service-role keys ni tokens de Google Drive. No se alteraron registros de negocio ni el esquema de tablas.
