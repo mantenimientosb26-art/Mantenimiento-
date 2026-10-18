@@ -37,7 +37,7 @@ Revisión de solo lectura de GitHub, Cloudflare y Supabase. No se ha desplegado 
 5. Desplegar solo después de validar las pruebas y comprobar los endpoints activos.
 
 ## Seguridad y cambios de permisos — 18/10/2026
-- Se retiró el permiso `EXECUTE` de `anon` sobre la RPC heredada `submit_unified_public_incident(...)`: los Workers activos usan la Edge Function `submit-maintenance-incident` y no referencian la RPC antigua. Se conserva el permiso de `authenticated`.
+- Se retiró el permiso `EXECUTE` de `anon` y `authenticated` sobre la RPC heredada `submit_unified_public_incident(...)`: los Workers activos usan la Edge Function `submit-maintenance-incident` y no referencian la RPC antigua.
 - Se retiró `EXECUTE` de `PUBLIC`, `anon` y `authenticated` sobre `log_maintenance_change()`, que es una función interna de trigger. Se verificó que los triggers de auditoría siguen definidos en `incidents`, `interventions`, `equipment` y `attachments`.
 - Las funciones públicas de invitación/listado y la RPC con token de acceso se mantienen porque forman parte del flujo público y requieren una revisión individual antes de cambiar permisos.
 - No se copiaron secretos OAuth, service-role keys ni tokens de Google Drive. No se alteraron registros de negocio ni el esquema de tablas.
