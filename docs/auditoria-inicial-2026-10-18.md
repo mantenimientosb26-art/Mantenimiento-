@@ -26,6 +26,7 @@ Revisión de solo lectura de GitHub, Cloudflare y Supabase. No se ha desplegado 
 - Se requiere una sesión autenticada; se usa el usuario actual como `technician_id` y la política RLS existente restringe el acceso al local.
 - Se añadió captura de errores en carga de locales/equipos para que se muestren en pantalla.
 - El código del Worker y el JavaScript del navegador pasan comprobación sintáctica. Se verificó que el Worker desplegado contiene el formulario, el historial y la inserción, y que su contenido coincide con la versión guardada en la rama principal de GitHub.
+- Se validó la inserción bajo RLS con una transacción de prueba usando la identidad admin; la operación se aceptó y se revirtió. Se confirmó que no quedó ninguna fila de prueba.
 - **Pendiente:** probar una inserción real desde navegador con la cuenta del usuario. No se han creado registros de prueba ni modificado el esquema de Supabase.
 
 ## Siguiente secuencia segura
