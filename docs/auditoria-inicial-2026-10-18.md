@@ -20,6 +20,14 @@ Revisión de solo lectura de GitHub, Cloudflare y Supabase. No se ha desplegado 
 6. **RPC pública heredada:** el asesor de Supabase marca `submit_unified_public_incident(...)` como `SECURITY DEFINER` ejecutable por `anon`; su definición inserta avisos sin validar token. No aparece referenciada en el repositorio actual y el Worker vigente usa la Edge Function `submit-maintenance-incident`, pero hay que comprobar que no exista un formulario antiguo que dependa de ella antes de revocar su permiso público.
 7. **Funciones públicas previstas:** `check_access_invitation`, `public_maintenance_sites` y `submit_public_incident` también aparecen en los avisos de seguridad. Algunas son parte del flujo público de invitaciones/avisos y no deben deshabilitarse sin revisar sus validaciones y usos.
 
+## Cambio aplicado en producción — 18/10/2026
+- Se añadió directamente a cada ficha de equipo el formulario **Añadir intervención** y el historial existente de ese equipo.
+- El formulario registra tipo, fecha, asunto, descripción, materiales, coste y seguimiento en `equipment_maintenance_records`.
+- Se requiere una sesión autenticada; se usa el usuario actual como `technician_id` y la política RLS existente restringe el acceso al local.
+- Se añadió captura de errores en carga de locales/equipos para que se muestren en pantalla.
+- El código del Worker y el JavaScript del navegador pasan comprobación sintáctica. Se verificó que el Worker desplegado contiene el formulario, el historial y la inserción.
+- **Pendiente:** probar una inserción real desde navegador con la cuenta del usuario. No se han creado registros de prueba ni modificado el esquema de Supabase.
+
 ## Siguiente secuencia segura
 1. Reproducir el fallo de carga con sesión de administrador y registrar el error exacto.
 2. Revisar las políticas RLS, permisos de funciones y logs de Supabase/Cloudflare.
@@ -28,4 +36,4 @@ Revisión de solo lectura de GitHub, Cloudflare y Supabase. No se ha desplegado 
 5. Desplegar solo después de validar las pruebas y comprobar los endpoints activos.
 
 ## Seguridad
-No se copiaron secretos OAuth, service-role keys ni tokens de Google Drive. No se realizaron cambios de producción.
+No se copiaron secretos OAuth, service-role keys ni tokens de Google Drive. El despliegue se limitó al Worker de fichas; no se cambiaron políticas, funciones ni datos de Supabase.
