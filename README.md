@@ -22,7 +22,7 @@ Aplicación de avisos, fichas de locales/equipos e intervenciones para los 13 lo
 - El formulario de intervenciones se ha añadido a cada ficha de equipo y está desplegado en Cloudflare. El código del Worker desplegado coincide con el guardado en GitHub.
 - Se probó una inserción bajo el rol `authenticated` con identidad de administrador dentro de una transacción revertida: la política RLS permitió la operación y se comprobó que no quedó ninguna fila de prueba.
 - La inserción requiere una sesión válida y acceso al local; la política RLS comprueba que el técnico de la intervención coincide con el usuario autenticado.
-- Se restringió la RPC heredada `submit_unified_public_incident` para impedir ejecución por usuarios anónimos y se retiró la ejecución directa de la función interna de auditoría `log_maintenance_change()`. Los triggers de auditoría siguen definidos.
+- Se restringió la RPC heredada `submit_unified_public_incident` para impedir ejecución por usuarios anónimos y autenticados y se retiró la ejecución directa de la función interna de auditoría `log_maintenance_change()`. Los triggers de auditoría siguen definidos.
 
 ## Pendiente de verificación funcional
 
