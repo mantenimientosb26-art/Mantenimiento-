@@ -27,6 +27,7 @@
 - Sintaxis del Worker de fichas y del JavaScript de navegador: correcta.
 - Worker desplegado `mantenimiento-fichas` contiene formulario, historial e inserción; su código coincide con `main` en GitHub.
 - La tabla de intervenciones tiene RLS activado y concede a `authenticated` permisos de lectura/inserción. La política de inserción requiere acceso al local y que `technician_id` sea el usuario autenticado.
+- Se hizo una inserción de prueba dentro de una transacción con rol `authenticated` e identidad admin; fue aceptada por RLS y se revirtió. La verificación posterior confirmó cero filas con el título de prueba y una intervención total.
 - La función de auditoría sigue asociada a los triggers existentes.
 - No fue posible ejecutar una prueba de navegador con una sesión real del usuario desde el entorno de herramientas. Por tanto, no se declara validado el guardado real de extremo a extremo.
 
