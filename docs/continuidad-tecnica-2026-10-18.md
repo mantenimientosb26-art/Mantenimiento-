@@ -6,7 +6,7 @@
 - Se recuperó el Worker real `mantenimiento-fichas`, se añadió a cada equipo el formulario de alta de intervención y su historial, y se desplegó. El código de GitHub coincide exactamente con el Worker activo.
 - La página principal `/local` del Worker `servicio-tecnico-mantenimiento` ya contiene una ficha modal de equipo con edición e intervención ligada al equipo. Se mantiene versionada en `cloudflare/servicio-tecnico-mantenimiento.js`.
 - El formulario público de avisos sigue en `mantenimiento-avisos-nuevo` y llama a la Edge Function `submit-maintenance-incident` versión 4.
-- Se aplicaron y registraron dos cambios de permisos Supabase: revocar `anon` de la RPC heredada `submit_unified_public_incident` y revocar ejecución directa de `log_maintenance_change()` a `PUBLIC`, `anon` y `authenticated`. Los 12 triggers de auditoría siguen definidos.
+- Se aplicaron y registraron tres cambios de permisos Supabase: revocar `anon` y `authenticated` de la RPC heredada `submit_unified_public_incident`, y revocar ejecución directa de `log_maintenance_change()` a `PUBLIC`, `anon` y `authenticated`. Los 12 triggers de auditoría siguen definidos.
 - No se han insertado datos de prueba ni se ha modificado el esquema de tablas.
 
 ## Arquitectura y enlaces
