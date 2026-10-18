@@ -22,7 +22,7 @@ Comprobaciones realizadas:
 - El contenido desplegado coincide con `cloudflare/mantenimiento-fichas.js` en GitHub.
 - La tabla tiene RLS activado y permisos de lectura/inserción para `authenticated`; la política de inserción requiere acceso al local y coincidencia del técnico con el usuario autenticado.
 
-Pendiente: probar un guardado real desde el navegador con una sesión de usuario. No se han creado filas de prueba.
+Se validó la inserción bajo RLS con identidad de administrador dentro de una transacción que se revirtió; la consulta posterior confirmó cero filas de prueba y se mantuvo el total de 1 intervención. Pendiente: probar el recorrido real desde navegador con la sesión de usuario.
 
 ## Seguridad aplicada
 - Revocado `EXECUTE` a `anon` sobre la RPC antigua `submit_unified_public_incident(...)`; el formulario activo usa la Edge Function actual.
