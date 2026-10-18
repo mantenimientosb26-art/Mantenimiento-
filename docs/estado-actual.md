@@ -25,7 +25,7 @@ Comprobaciones realizadas:
 Se validó la inserción bajo RLS con identidad de administrador dentro de una transacción que se revirtió; la consulta posterior confirmó cero filas de prueba y se mantuvo el total de 1 intervención. Pendiente: probar el recorrido real desde navegador con la sesión de usuario.
 
 ## Seguridad aplicada
-- Revocado `EXECUTE` a `anon` sobre la RPC antigua `submit_unified_public_incident(...)`; el formulario activo usa la Edge Function actual.
+- Revocado `EXECUTE` a `anon` y `authenticated` sobre la RPC antigua `submit_unified_public_incident(...)`; el formulario activo usa la Edge Function actual.
 - Revocado `EXECUTE` a `PUBLIC`, `anon` y `authenticated` sobre la función interna de trigger `log_maintenance_change()`.
 - Verificados los 12 triggers de auditoría asociados a avisos, intervenciones, equipos y adjuntos.
 
