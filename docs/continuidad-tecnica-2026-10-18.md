@@ -69,3 +69,15 @@ Las skills son instrucciones para agentes de desarrollo; tener el ZIP no las ins
 - Se ha localizado el repositorio principal y confirmado el historial de restauración/correcciones del Worker.
 - Se han leído el README, las notas de estado, el formulario público y partes relevantes del Worker de aplicación.
 - No se ha reproducido todavía el fallo con una sesión autenticada y no se ha desplegado ni modificado código de producción.
+
+
+## Hallazgos adicionales comprobados en Supabase — 18/10/2026
+- Esquema actual: `public.sites` tiene RLS activado y 13 filas; `public.equipment` tiene 102 filas; `public.incidents` tiene 8 filas. El recuento de avisos difiere de la nota del 12/10, por lo que debe prevalecer la consulta en vivo.
+- La política `sites_admin_manage` permite todas las operaciones sobre locales únicamente cuando `public.is_admin()` es verdadero. La lectura usa `can_access_site(id)`.
+- `is_admin()` devuelve verdadero solo si el usuario autenticado tiene una fila en `profiles` con su mismo UUID, `role = 'admin'` y `active = true`. Por tanto, un perfil ausente/inactivo o con rol distinto bloqueará el alta aunque la interfaz muestre el formulario.
+- `site_access` tiene 0 filas en la consulta de esquema, así que los usuarios no administradores no tendrán acceso a locales por asignación explícita hasta que se les otorgue acceso. Esto no debería impedir al administrador, si su perfil es correcto.
+- Los asesores de seguridad de Supabase detectan funciones `SECURITY DEFINER` ejecutables por `anon` y/o `authenticated` (entre ellas `check_access_invitation`, `public_maintenance_sites`, `submit_public_incident`, `submit_unified_public_incident`, `can_access_site`, `create_access_invitation`, `create_site_access_token`, `is_admin` y `log_maintenance_change`) y protección contra contraseñas filtradas desactivada. Algunas RPC públicas pueden ser intencionadas; revisar cada una antes de revocar permisos para no romper el formulario público.
+- No se modificó ninguna política, función ni dato de producción. No se obtuvo una sesión autenticada del usuario desde esta revisión, así que aún no se puede confirmar qué rol ve la aplicación al intentar crear un local.
+
+### Próximo paso diagnóstico prioritario
+Antes de tocar el Worker, comprobar que el usuario administrador que inicia sesión corresponde a una fila activa de `profiles` con rol `admin`, y capturar el error exacto del intento de alta. Si eso está correcto, revisar el formulario y la petición `INSERT` contra `sites`. No crear perfiles ni cambiar roles automáticamente.
