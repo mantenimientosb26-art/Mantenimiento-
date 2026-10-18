@@ -1,70 +1,38 @@
-# Estado técnico — 11/10/2026
+# Estado actual del servicio técnico
+Última comprobación: 18/10/2026.
 
-## Recursos
-- Worker formulario: `mantenimiento-avisos-nuevo`
-- Worker Drive/OAuth: `servicio-tecnico-mantenimiento`
-- Supabase: `knpvuiamdbnbrkwmoxqf`
-- Edge Function: `submit-maintenance-incident` versión 4
-- Locales: 13
+## Despliegues
+- `mantenimiento-fichas`: fichas de locales/equipos, miniaturas y ahora registro e historial de intervenciones dentro de cada equipo. Desplegado el 18/10/2026.
+- `mantenimiento-avisos-nuevo`: formulario público y pasarela de avisos.
+- `servicio-tecnico-mantenimiento`: panel, ficha `/local`, módulo `/intervenciones` y endpoints de Google Drive/OAuth.
+- Supabase Edge Function `submit-maintenance-incident`: versión 4.
 
-## Hallazgos
-- La función acepta POST multipart/form-data, valida los 13 IDs de local y los campos, e inserta en `public.incidents` con `status = new` y `source = form`.
-- La función declara los adjuntos como responsabilidad del Worker y responde `attachment_count: 0`; los archivos no se guardan en Supabase Storage.
-- El Worker del formulario hace la llamada a Supabase y después intenta subir archivos al endpoint `/google-drive/upload` del Worker de Drive.
-- El endpoint de Drive crea una carpeta por aviso y sube los archivos a Google Drive usando un refresh token guardado en KV.
-- Estado actual de las tablas consultadas: sites=13, incidents=0, attachments=0, equipment=0, interventions=0.
+## Datos observados
+- 13 locales activos.
+- 102 equipos.
+- 8 avisos.
+- 1 intervención existente en `equipment_maintenance_records`.
+- 0 filas en `attachments` y 0 filas en la tabla antigua `interventions` en la última consulta.
 
-## Lo que NO está confirmado
-- No se ha demostrado que un aviso real se inserte correctamente desde el formulario público.
-- No se ha demostrado que las fotos/vídeos terminen en Drive.
-- No se debe comunicar al usuario final que está arreglado hasta superar ambas pruebas.
+## Intervenciones en fichas
+El formulario de intervención se ha desplegado en `mantenimiento-fichas`. Permite registrar tipo, fecha, título, descripción, materiales, coste y seguimiento, y muestra el historial del equipo. Requiere sesión autenticada y utiliza la política RLS existente.
 
-## Próximas verificaciones
-1. Consultar logs de la Edge Function usando los campos correctos del esquema de logs.
-2. Comprobar en SQL el enum de estado/prioridad y las políticas/triggers asociados a `incidents`.
-3. Ejecutar una prueba controlada con datos de prueba, comprobar que aparece el registro y retirarlo solo si se identifica inequívocamente como prueba.
-4. Probar la subida de un archivo pequeño y comprobar carpeta/archivo en Drive.
-5. Ajustar CORS si se hacen llamadas desde navegador; actualmente el origen permitido en cabecera es el Worker antiguo.
+Comprobaciones realizadas:
+- Sintaxis del Worker y del JavaScript del navegador: correcta.
+- El contenido desplegado coincide con `cloudflare/mantenimiento-fichas.js` en GitHub.
+- La tabla tiene RLS activado y permisos de lectura/inserción para `authenticated`; la política de inserción requiere acceso al local y coincidencia del técnico con el usuario autenticado.
 
+Pendiente: probar un guardado real desde el navegador con una sesión de usuario. No se han creado filas de prueba.
 
-## Revisión y correcciones — 12/10/2026
-- Worker `servicio-tecnico-mantenimiento` desplegado con mensajes visibles para los casos de sesión ausente e identificador de local ausente en `/local`.
-- En la ficha del local, cada aviso se puede expandir para leer título, descripción y persona que lo comunicó.
-- En el panel principal, cada aviso se puede expandir para ver descripción, persona, teléfono y categoría.
-- Worker `mantenimiento-avisos-nuevo` actualizado con el logo original SIGANBALANDO GROUP centrado sobre fondo blanco y validación previa de máximo 5 archivos, 25 MB por archivo y tipos MIME admitidos.
-- Se preservaron `global_fetch_strictly_public`, el binding `DRIVE_KV` y los secretos OAuth `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
-- No se borraron registros. Conteo consultado: 13 locales, 10 avisos, 0 adjuntos registrados en la tabla `attachments`, 0 equipos y 0 intervenciones.
-- Cloudflare acepta los despliegues y no devuelve incidencias registradas en Observability; la prueba real de navegación y subida de archivos aún debe hacerse desde el navegador.
+## Seguridad aplicada
+- Revocado `EXECUTE` a `anon` sobre la RPC antigua `submit_unified_public_incident(...)`; el formulario activo usa la Edge Function actual.
+- Revocado `EXECUTE` a `PUBLIC`, `anon` y `authenticated` sobre la función interna de trigger `log_maintenance_change()`.
+- Verificados los 12 triggers de auditoría asociados a avisos, intervenciones, equipos y adjuntos.
 
-- La ficha del local consulta los adjuntos directamente en Google Drive mediante un endpoint protegido: valida sesión Supabase y exige perfil administrador; la búsqueda se agrupa para evitar una llamada por aviso.
+## Pendientes
+1. Validar envío real de aviso público sin adjuntos y con adjuntos.
+2. Confirmar la subida de fotos/vídeos a Google Drive de extremo a extremo.
+3. Migrar las miniaturas de equipo del bucket heredado de Supabase Storage a Drive de forma segura, sin perder imágenes existentes.
+4. Revisar avisos de seguridad restantes individualmente, sin desactivar RPC públicas que requieran invitación o token.
 
-- La subida interna a Drive está protegida por un secreto compartido entre los dos Workers, almacenado exclusivamente en secretos de Cloudflare.
-- La consulta de archivos en Drive se valida con sesión Supabase y perfil `admin`; la ficha agrupa la consulta para evitar una llamada de OAuth por cada aviso.
-
-- Los errores al consultar los adjuntos de Drive ahora se muestran en la ficha en lugar de confundirse con una carpeta sin archivos.
-
-
-## Acceso privado y control de avisos — 12/10/2026
-- Se desplegó registro con código de invitación de un solo uso, validado en Supabase y exigido también por el trigger de alta. El registro directo sin código válido se rechaza en base de datos.
-- El administrador genera códigos desde el panel, asignando un local y el perfil Observación (solo lectura) o Técnico (gestión del local). Caducidad configurable de 1 a 30 días, siete por defecto.
-- Los códigos se almacenan como hash y se consumen al registrarse; el alta crea automáticamente el perfil y el permiso para el local seleccionado.
-- Se retiró la excepción de alta de administrador por correo; el perfil de administrador existente no se modifica.
-- Se añadió eliminación de avisos en el panel y ficha, visible solo para el administrador, y política RLS de borrado exclusivo para administradores.
-- La ficha muestra errores de consulta de local, equipos y avisos en vez de dejar contadores indefinidos; se corrigió la construcción de la fila de eliminación en la ficha.
-- La ruta `/aviso` continúa siendo un formulario público separado para comunicar incidencias sin entrar al panel privado.
-
-- Los informes globales requieren perfil administrador para evitar que una cuenta de observación acceda a agregados de otros locales.
-- La ficha del local muestra mensajes concretos de error para consultas de local/equipos/avisos y ofrece eliminación administrativa de avisos.
-
-
-## Auditoría y corrección de fichas — 12/10/2026 (última revisión)
-
-- El usuario confirma que la subida de fotos y vídeos a Google Drive ya funciona. No modificar ese flujo sin una nueva evidencia de fallo.
-- Datos consultados en Supabase: 13 locales activos, 11 avisos, 0 equipos y 0 intervenciones.
-- La cuenta `mantenimientosb26@gmail.com` tiene perfil activo con rol `admin`.
-- `site_access` no tiene filas. Esto no debe bloquear al administrador: las políticas de `sites` y la función `can_access_site` permiten acceso al rol admin.
-- Se corrigió el panel principal: ahora pinta la lista de locales aunque falle la consulta de avisos o de equipos; cada sección muestra su propio error en lugar de abortar toda la carga. También se incluyen teléfono y categoría en la consulta de avisos, que la interfaz ya mostraba.
-- Cambio desplegado en Cloudflare Worker `servicio-tecnico-mantenimiento` el 12/10/2026; la API confirmó despliegue correcto. Se comprobó que siguen presentes los bindings `DRIVE_KV`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `UPLOAD_SHARED_SECRET`.
-- Código sincronizado en GitHub en el commit `5a25e4374fda490ec0c0501dedd3d6f506124c27`.
-- Limitación de verificación: el entorno de ejecución bloquea las peticiones directas al dominio público del Worker, por lo que no se pudo completar una prueba de navegador autenticada desde esta sesión.
-- Pendiente funcional prioritario: comprobar desde la app, con la cuenta administradora, que se ven los 13 locales y que al abrir una ficha cargan datos del local. Después empezar a registrar los equipos reales; ahora mismo la tabla de equipos está vacía.
+Para el contexto detallado y las decisiones técnicas, consultar [continuidad técnica](continuidad-tecnica-2026-10-18.md) y [auditoría inicial](auditoria-inicial-2026-10-18.md).
