@@ -81,3 +81,13 @@ Las skills son instrucciones para agentes de desarrollo; tener el ZIP no las ins
 
 ### Próximo paso diagnóstico prioritario
 Antes de tocar el Worker, comprobar que el usuario administrador que inicia sesión corresponde a una fila activa de `profiles` con rol `admin`, y capturar el error exacto del intento de alta. Si eso está correcto, revisar el formulario y la petición `INSERT` contra `sites`. No crear perfiles ni cambiar roles automáticamente.
+
+
+## Incidencia comunicada el 18/10/2026: no se pueden añadir intervenciones desde la ficha del equipo
+- Verificado en el Worker de Cloudflare desplegado: la ficha modal contiene el formulario `newEquipmentMaintenance` y el handler intenta insertar en `public.equipment_maintenance_records`; los errores se muestran en una alerta.
+- La ruta `/intervenciones` también existe como módulo separado.
+- La tabla tiene permisos SQL INSERT/SELECT/UPDATE para `authenticated`, RLS activado y una política de inserción que exige `can_access_site(site_id)` y que `technician_id` sea nulo o coincida con `auth.uid()`.
+- `can_access_site(uuid)` permite acceso si `is_admin()` es verdadero o si existe una asignación activa en `site_access`. En la consulta actual hay un único perfil activo con rol admin y cero filas en `site_access`.
+- El formulario envía `technician_id = auth.uid()`, `site_id` de la ficha y `equipment_id` del equipo; los tipos de intervención del formulario coinciden con la restricción CHECK de la tabla.
+- No se puede confirmar aún el motivo final sin observar la sesión real y el error exacto que devuelve el INSERT. No se ha cambiado la política RLS ni se ha desplegado un parche a ciegas.
+- Diagnóstico inmediato: comprobar si la cuenta que está iniciada tiene el perfil admin activo; si no, necesita perfil y acceso explícito al local correspondiente. Si sí lo tiene, capturar el mensaje exacto de la alerta para revisar el INSERT/fecha/constraint.
